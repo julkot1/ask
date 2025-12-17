@@ -1,5 +1,5 @@
 <?php
-echo "<h2> Search users (unsafe)</h2>";
+echo "<h2> Search users (very unsafe)</h2>";
 
 $input = $_GET['user'] ?? '';
 
