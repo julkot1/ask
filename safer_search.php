@@ -11,9 +11,10 @@ if ($input !== '') {
         die("Błąd połączenia: " . $conn->connect_error);
     }
  
-    $statement = $mysqli->prepare("SELECT id, username, email FROM users WHERE username(label)");
+    $statement = $conn->prepare("SELECT id, username, email FROM users WHERE username = ?");
     $statement->bind_param("s", $input);
-    $statement->execuute();
+    $statement->execute();
+    $result = $statement->get_result();
 
     // $result  = $conn->query("
     //    SELECT id, username, email 
@@ -23,6 +24,7 @@ if ($input !== '') {
 
     if ($result->num_rows > 0) {
         header("Location: /demo/user.php");
+        $conn->close();
         exit();
     }
 
