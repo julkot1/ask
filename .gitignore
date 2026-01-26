@@ -1,3 +1,10 @@
 /.idea
 /.venv
 a.out
+
+*.gz
+*.dvi
+*.aux
+*.fls
+*.log
+*.fdb_latexmk
