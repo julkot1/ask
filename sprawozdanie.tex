@@ -1,0 +1,255 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{lato}
+\usepackage[polish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% sekcja autora:
+% imie, nazwisko, indeks, tytuł i numer projektu, data submitowania
+% i jako tabelka najlepiej
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue,
+    pdfpagemode=FullScreen
+}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+}
+
+\lstset{style=mystyle}
+
+\linespread{1.5}
+\title{Sprawozdanie z tematu nr 27: "Zautomatyzowane ataki iniekcji kodu SQL"}
+\author{Mateusz Rzęsa, gr 7A; 198417 \\ Julian Kotłowski, gr 7A, 197694}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+\section{Wstęp}
+
+Ataki typu wstrzykiwanie SQL nie są nowym tematem w dziedzinie cyberbezpieczeństwa. Najwcześniejsze dyskusje tej podatności można
+znaleźć w tekstach z nawet 1998 \cite{1}. Pomimo starości nadal jest jedną z najczęściej stosowanych sposobów ataków na witryny.
+Najświeższa edycja "Top Ten Web Application Security Risks" projektu Open Web Application Security z roku 2021 uwzględnia wstrzykiwanie
+SQL pod szerszą kategorią zatytułowaną "Injection". Zgodnie z raportem ocenia się że 94\% przeanalizowanych aplikacji webowych było
+podatne na ataki oparte na wstrzykiwaniu \cite{2}. Liczba ta nie wykazuje znaków zmniejszenia się w wydaniu kandydującym na rok
+2025 \cite{3}. Jasnym jest, że pomimo wielu badań i technik unikania tej podatności problem wstrzykiwania SQL nadal jest powszechny.
+
+\section{Cel projektu}
+Celem projektu jest zaprezentowanie jak wyglądają ataki typu ślepe wstrzykiwanie SQL oraz sposobów na obronę przed nimi z perspektywy
+programisty i administratora. Przedstawione zostaną przykładowe witryny odporne lub podatne na ten atak.
+
+\section{Wstrzykiwanie SQL}
+Wstrzykiwanie SQL odnosi się do typu ataku w którym atakujący może wpisać przygotowane zapytanie SQL poprzez niewalidowane dane wejściowe
+od użytkownika \cite{4}. W tradycyjnym przykładzie ma to formę wpisania odpowiedniego łańcucha znaków w pole tekstowe. Wstrzyknięte zapytanie
+może być wykorzystane do odczytu nieautoryzowanych danych, modyfikacji danych i wiele innych. Sposoby wykorzystania tej podatności
+są ograniczone tylko przez kreatywność atakującego.
+
+\subsection{Proste wstrzykiwanie SQL}
+Weźmy na przykład następującą witrynę:
+\tiny{
+    \lstinputlisting[language=PHP]{index.php}
+}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{images/simple_website.png}
+    \caption{Wygląd prostej witryny}
+\end{figure}
+\normalsize
+Witryna ta zwraca użytkownikowi bezpośredni wynik zapytania SQL. Zapytanie użytkownika jest wklejone bez żadnej walidacji do funkcji
+\href{https://www.php.net/manual/en/mysqli.query.php}{query()}. Jest to podręcznikowy przykład witryny podatnej na najprostsze wstrzyknięcie
+SQL, możemy wpisać na przykład \verb|bzdura' OR 'a'='a|, aby otrzymać wszystkie dane w bazie danych, jak widoczne na rysunku
+\ref{fig:wynik_simple}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{images/wynik_simple.png}
+    \caption{Rezultat wstrzyknięcia}
+    \label{fig:wynik_simple}
+\end{figure}
+
+\subsection{Ślepe wstrzykiwanie SQL}
+Witryny, na których możliwe jest przeprowadzenie tak łatwego wstrzyknięcia są dość rzadkie. W tym projekcie skupienie jest położone na
+trudniejsze do przeprowadzenia ataki. Rozważmy nieco inną witrynę:
+
+\tiny{
+    \lstinputlisting[language=PHP]{search.php}
+}
+\normalsize
+W tej witrynie rezultat zapytania nie jest zwracany użytkownikowi. Zamiast tego użytkownik dostaje jedynie informację czy jego zapytanie
+powiodło się, czy nie. Programista tej witryny nadal popełnił ten sam błąd - wynik pola tekstowego jest wklejany bezpośrednio do funkcji
+query(). Podatność nadal jest obecna, ale jej wykorzystanie wymaga większej finezji.
+
+Możliwa jest weryfikacja obecności podatności. Znając zapytanie, dla którego wynikiem jest rezultat "sukces", jeżeli do zapytania dodany
+zostanie warunek, który zmieni wartość logiczną zapytania w fałsz i wynikiem tego zmienionego zapytania będzie "porażka",
+to występuje możliwość wstrzykiwania zapytań SQL. Na przykład jeżeli wiadomo, że dla zapytania \verb|alice| rezultatem jest "sukces"
+to podatność występuje jeśli dla zapytania \verb|alice' AND 'a'='b| rezultatem jest "porażka", jako iż \verb|dowolne zdanie AND 'a' = 'b'|
+zawsze zwróci fałsz.
+
+Atak tego typu ślepe wstrzykiwanie SQL jest podobny do gry
+w 20 pytań z serwerem. Atakujący będzie wysyłał jedno po drugim zapytania takie jak \verb|Czy pierwsza litera tabeli to 'm'?|,
+\verb|Czy druga litera to 'l'?| itp. Jedną literę można wydobyć w średnio 7 zapytań, korzystając z wyszukiwania binarnego.
+
+Zgodnie z zasadą Codda o numerze cztery metadane relacyjnej bazy danych nie powinny się różnić od zwykłych danych, możliwe jest więc
+wykonywanie na nich zapytań \cite{5}. Oprócz zwykłych danych, atakujący może więc zdobyć informacje o strukturze bazy. Aby to zaprezentować
+opracowano prosty skrypt, który wydobywa nazwę bazy danych, nazwy wszystkich pól tabeli i ich zawartość z powyższej witryny. Pełen skrypt
+dostępny jest na platformie \href{https://github.com/julkot1/ask}{GitHub}, jako iż jest zbyt długi by uwzględnić go w całości w niniejszym
+sprawozdaniu.
+
+Główna pętla skryptu:
+\begin{lstlisting}[language=Python]
+    def main():
+    if len(sys.argv) < 2:
+        address = "192.168.1.3"
+    else:
+        address = sys.argv[1]
+    url  = f"http://{address}/demo/search.php"
+    print(f"Attacking url: {url}")
+    start_time = time.time()
+    global db_name
+    db_name = guess_secret(url, 0).lower()
+    print("DB_name:", db_name)
+    tables = guess_secret(url,1).lower().split(" ")
+    print("tables: ", tables)
+    for table in tables:
+        global current_table
+        current_table = table
+        attrs = guess_secret(url,2).lower().split(" ")
+        print(f"table: {table}: {attrs}")
+        for attr in attrs:
+            global current_attr
+            current_attr = attr
+            records = guess_secret(url,3).lower().split(" ")
+            print(f"attr: {attr}: {records}")
+    end_time = time.time()
+    total_time = end_time - start_time
+    global request_counter
+    print(f"Attack took {total_time:.2f} seconds")
+    print(f"Attack required {request_counter} requests")
+\end{lstlisting}
+
+Zgadywanie pojedynczego "słowa":
+\begin{lstlisting}[language=Python]
+    def guess_secret(url: str, url_idx):
+    alphabet = "".join(chr(i) for i in range(128))
+    name = ""
+    idx = 1
+
+    while True:
+        if eq(name, url, url_idx):
+            return name
+        ch = binary_search_char(idx, alphabet, url, url_idx)
+        if ch is None:
+           ch = ' '
+        
+        name += ch
+        idx += 1
+\end{lstlisting}
+
+Wyszukiwanie pojedynczej litery:
+\begin{lstlisting}[language=Python]
+    def binary_search_char(idx, alphabet, url: str, url_idx):
+    lo, hi = 0, len(alphabet) - 1
+
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        guess = alphabet[mid]
+        if eq_char(idx, guess, url,url_idx):
+            return guess
+        elif lower(idx, guess, url, url_idx):
+            hi = mid - 1
+        else:
+            lo = mid + 1
+    return None
+\end{lstlisting}
+
+\section{Sposoby obrony}
+\subsection{Z perspektywy programisty}
+W aplikacjach pisanych w języku PHP często dochodzi do występowania tej podatności przez mylącą funkcję
+\href{https://www.php.net/manual/en/mysqli.query.php}{query()}. Wystarczy prześledzić wzrokiem jej dokumentację by dostrzec ostrzeżenie
+na czerwonym tle radzące programistom nie korzystać z tej metody. Zamiast tego zalecane jest użycie tzw. "\textit{prepared statements"},
+czyli zapytań, które wymagają konkretnego typu parametru na wejście. Nie zachodzi w nich sklejanie ze sobą łańcuchów znaków \cite{6}.
+
+Witryna napisana bezpieczniej niż ta podana w poprzednim przykładzie mogłaby wyglądać następująco:
+
+\tiny{
+    \lstinputlisting[language=PHP]{safer_search.php}
+}
+
+\normalsize
+
+Języki inne niż PHP również mają bezpieczniejsze sposoby na tworzenie zapytań SQL, często w formie tzw. "\textit{Object-relational mapping}" \cite{7}.
+Programista powinien wykonać odpowiednie badanie i użyć metody udowodnionej jako najbezpieczniejszą.
+
+\subsection{Z perspektywy administratora}
+Administrator, który nie ma żadnego wpływu na kod witryny nie jest bezsilny w walce z wstrzykiwaniem SQL. Dostępne jest oprogramowanie
+służące jako dodatkowa warstwa bezpieczeństwa pomiędzy potencjalnym atakującym i bazą danych. W powszechnie używanym serwerze Apache
+dostępny jest moduł \href{https://modsecurity.org/}{ModSecurity}.
+
+Funkcjonalność ta stawia pośrednika pomiędzy przed dostępem do serwera. Przechwytuje żądania HTTP i analizuje je pod kątem wzorów często
+pojawiających się w atakach typu wstrzykiwanie SQL np. \verb|'OR 1=1'|. Filtracja ta jest bardziej skompilowana niż tylko wyszukiwanie konkretnych słów.
+Przychodzące zapytanie jest analizowane i przydzielane wynik "podejrzenia". Po przekroczeniu pewnego progu żądanie jest blokowane.
+Inną funkcjonalnością często obecną w tego typu modułach jest trenowanie ich w tym jak wygląda "dobry" ruch sieciowy. Trening ten może być
+potem wykorzystany do identyfikowania "złych" żądań \cite{waf}.
+
+ModSecurity jest wysoce konfigurowalne i ma wiele reguł definiujących zachowanie blokady \cite{modSecurityReference}. Opisanie całości
+działania tej technologii jest wysoce poza zasięgiem niniejszego sprawozdania.
+
+\section{Podsumowanie}
+Ataki typu wstrzykiwanie SQL pomimo swojej starości nadal są powszechnie występujące w witrynach internetowych. Tym ważniejsze jest zrozumienie ich działania
+oraz znajomość sposobów obrony. W projekcie opracowano przykładowe witryny podatne i odporne na wstrzykiwanie SQL oraz przeprowadzono
+badanie na temat metod ochrony poza zmianą kodu witryn.
+
+\begin{thebibliography}{1}
+    \bibitem{1}
+    \href{https://web.archive.org/web/20140319065810/http://www.phrack.com/issues.html?issue=54&id=8#article}
+    {Wczesne dyskusje nt. wstrzykiwania SQL, Phrack Magazine}
+    \bibitem{2}
+    \href{ttps://owasp.org/Top10/2021/A03_2021-Injection/h}{Sekcja o wstrzykiwaniu z edycji 2021 "Top 10" OWASP: \\ https://owasp.org/Top10/2021/A03\_2021-Injection/}
+    \bibitem{3}
+    \href{https://owasp.org/Top10/2025/A05_2025-Injection/}{Sekcja o wstrzykiwaniu z kandydata na edycję 2025 "Top 10" OWASP: \\ https://owasp.org/Top10/2025/A05\_2025-Injection/}
+    \bibitem{4}
+    \href{https://owasp.org/www-community/attacks/SQL_Injection}{Definicja SQL: \\ https://owasp.org/www-community/attacks/SQL\_Injection}
+    \bibitem{5}
+    \href{https://reldb.org/c/index.php/twelve-rules/}{12 zasad Codda: \\ ttps://reldb.org/c/index.php/twelve-rules/}
+    \bibitem{6}
+    \href{https://www.php.net/manual/en/mysqli.quickstart.prepared-statements.php}{Prepared statements: \\ https://www.php.net/manual/en/mysqli.quickstart.prepared-statements.php}
+    \bibitem{7}
+    \href{https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping}{Object-relational mapping: \\ https://en.wikipedia.org/wiki/Object\%E2\%80\%93relational\_mapping}
+    \bibitem{waf}
+    \href{https://www.redhat.com/en/blog/introducing-wafs}{Artykuł o Web Application Firewall:  \\ https://www.redhat.com/en/blog/introducing-wafs}
+    \bibitem{modSecurityReference}
+    \href{https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v3.x)}{Instrukcja ModSecurity: \\ https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v3.x)}
+\end{thebibliography}
+\end{document}

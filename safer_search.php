@@ -6,33 +6,18 @@ $input = $_GET['user'] ?? '';
 if ($input !== '') {
 
     $conn = new mysqli("localhost", "demo_user", "demo_pass", "demo_db");
-
-    if ($conn->connect_error) {
-        die("Błąd połączenia: " . $conn->connect_error);
-    }
- 
     $statement = $conn->prepare("SELECT id, username, email FROM users WHERE username = ?");
     $statement->bind_param("s", $input);
     $statement->execute();
     $result = $statement->get_result();
-
-    // $result  = $conn->query("
-    //    SELECT id, username, email 
-    //    FROM users 
-    //    WHERE username = '$input'
-    //");
-
     if ($result->num_rows > 0) {
         header("Location: /demo/user.php");
         $conn->close();
         exit();
     }
-
     $conn->close();
 }
-
 ?>
-
 <form>
     <input type="text" name="user" placeholder="username: ">
     <button type="submit">Szukaj</button>
