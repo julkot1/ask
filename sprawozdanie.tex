@@ -60,7 +60,7 @@
 \section{Wstęp}
 
 Ataki typu wstrzykiwanie SQL nie są nowym tematem w dziedzinie cyberbezpieczeństwa. Najwcześniejsze dyskusje tej podatności można
-znaleźć w tekstach z nawet 1998 \cite{1}. Pomimo starości nadal jest jedną z najczęściej stosowanych sposobów ataków na witryny.
+znaleźć w tekstach 1998 \cite{1}. Pomimo starości nadal jest jednym z najczęściej stosowanych sposobów ataków na witryny.
 Najświeższa edycja "Top Ten Web Application Security Risks" projektu Open Web Application Security z roku 2021 uwzględnia wstrzykiwanie
 SQL pod szerszą kategorią zatytułowaną "Injection". Zgodnie z raportem ocenia się że 94\% przeanalizowanych aplikacji webowych było
 podatne na ataki oparte na wstrzykiwaniu \cite{2}. Liczba ta nie wykazuje znaków zmniejszenia się w wydaniu kandydującym na rok
@@ -100,7 +100,7 @@ SQL, możemy wpisać na przykład \verb|bzdura' OR 'a'='a|, aby otrzymać wszyst
 \end{figure}
 
 \subsection{Ślepe wstrzykiwanie SQL}
-Witryny, na których możliwe jest przeprowadzenie tak łatwego wstrzyknięcia są dość rzadkie. W tym projekcie skupienie jest położone na
+Witryny, na których możliwe jest przeprowadzenie tak łatwego wstrzyknięcia są dość rzadkie. W tym projekcie nacisk jest położony na
 trudniejsze do przeprowadzenia ataki. Rozważmy nieco inną witrynę:
 
 \tiny{
@@ -111,10 +111,10 @@ W tej witrynie rezultat zapytania nie jest zwracany użytkownikowi. Zamiast tego
 powiodło się, czy nie. Programista tej witryny nadal popełnił ten sam błąd - wynik pola tekstowego jest wklejany bezpośrednio do funkcji
 query(). Podatność nadal jest obecna, ale jej wykorzystanie wymaga większej finezji.
 
-Możliwa jest weryfikacja obecności podatności. Znając zapytanie, dla którego wynikiem jest rezultat "sukces", jeżeli do zapytania dodany
+Znając zapytanie, dla którego wynikiem jest rezultat "sukces", jeżeli do zapytania dodany
 zostanie warunek, który zmieni wartość logiczną zapytania w fałsz i wynikiem tego zmienionego zapytania będzie "porażka",
 to występuje możliwość wstrzykiwania zapytań SQL. Na przykład jeżeli wiadomo, że dla zapytania \verb|alice| rezultatem jest "sukces"
-to podatność występuje jeśli dla zapytania \verb|alice' AND 'a'='b| rezultatem jest "porażka", jako iż \verb|dowolne zdanie AND 'a' = 'b'|
+to podatność występuje jeśli dla zapytania \verb|alice' AND 'a'='b| rezultatem jest "porażka", jako iż wyrażenie \verb|(dowolne zdanie logiczne) AND 'a' = 'b'|
 zawsze zwróci fałsz.
 
 Atak tego typu ślepe wstrzykiwanie SQL jest podobny do gry
@@ -218,7 +218,7 @@ służące jako dodatkowa warstwa bezpieczeństwa pomiędzy potencjalnym atakuj�
 dostępny jest moduł \href{https://modsecurity.org/}{ModSecurity}.
 
 Funkcjonalność ta stawia pośrednika pomiędzy przed dostępem do serwera. Przechwytuje żądania HTTP i analizuje je pod kątem wzorów często
-pojawiających się w atakach typu wstrzykiwanie SQL np. \verb|'OR 1=1'|. Filtracja ta jest bardziej skompilowana niż tylko wyszukiwanie konkretnych słów.
+pojawiających się w atakach typu wstrzykiwanie SQL np. \verb|'OR 1=1'|. Filtracja ta jest bardziej skompilowana, niż tylko wyszukiwanie konkretnych słów.
 Przychodzące zapytanie jest analizowane i przydzielane wynik "podejrzenia". Po przekroczeniu pewnego progu żądanie jest blokowane.
 Inną funkcjonalnością często obecną w tego typu modułach jest trenowanie ich w tym jak wygląda "dobry" ruch sieciowy. Trening ten może być
 potem wykorzystany do identyfikowania "złych" żądań \cite{waf}.
